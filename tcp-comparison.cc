@@ -367,31 +367,31 @@ int main (int argc, char *argv[])
                       QueueSizeValue (QueueSize (QueueSizeUnit::BYTES, size)));
 
   for (uint32_t i = 0; i < num_flows; i++)
-    {
-      NetDeviceContainer devices;
-      devices = LocalLink.Install (sources.Get (i), gateways.Get (0));
-      tchPfifo.Install (devices);
-      address.NewNetwork ();
-      Ipv4InterfaceContainer interfaces = address.Assign (devices);
-      std::cout << "local: " << interfaces.GetAddress(0) << std::endl;
+  {
+    NetDeviceContainer devices;
+    devices = LocalLink.Install (sources.Get (i), gateways.Get (0));
+    tchPfifo.Install (devices);
+    address.NewNetwork ();
+    Ipv4InterfaceContainer interfaces = address.Assign (devices);
+    std::cout << "local: " << interfaces.GetAddress(0) << std::endl;
 
-      devices = UnReLink.Install (gateways.Get (0), sinks.Get (i));
-      if (queue_disc_type.compare ("ns3::PfifoFastQueueDisc") == 0)
-        {
-          tchPfifo.Install (devices);
-        }
-      else if (queue_disc_type.compare ("ns3::CoDelQueueDisc") == 0)
-        {
-          tchCoDel.Install (devices);
-        }
-      else
-        {
-          NS_FATAL_ERROR ("Queue not recognized. Allowed values are ns3::CoDelQueueDisc or ns3::PfifoFastQueueDisc");
-        }
-      address.NewNetwork ();
-      interfaces = address.Assign (devices);
-      sink_interfaces.Add (interfaces.Get (1));
+    devices = UnReLink.Install (gateways.Get (0), sinks.Get (i));
+    if (queue_disc_type.compare ("ns3::PfifoFastQueueDisc") == 0)
+    {
+     tchPfifo.Install (devices);
     }
+    else if (queue_disc_type.compare ("ns3::CoDelQueueDisc") == 0)
+    {
+      tchCoDel.Install (devices);
+    }
+    else
+    {
+      NS_FATAL_ERROR ("Queue not recognized. Allowed values are ns3::CoDelQueueDisc or ns3::PfifoFastQueueDisc");
+    }
+    address.NewNetwork ();
+    interfaces = address.Assign (devices);
+    sink_interfaces.Add (interfaces.Get (1));
+  }
 
   NS_LOG_INFO ("Initialize Global Routing.");
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
@@ -401,49 +401,46 @@ int main (int argc, char *argv[])
   PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
 
   for (uint16_t i = 0; i < sources.GetN (); i++)
-    {
-      AddressValue remoteAddress (InetSocketAddress (sink_interfaces.GetAddress (i, 0), port));
-      Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (tcp_adu_size));
-      BulkSendHelper ftp ("ns3::TcpSocketFactory", Address ());
-      ftp.SetAttribute ("Remote", remoteAddress);
-      ftp.SetAttribute ("SendSize", UintegerValue (tcp_adu_size));
-      ftp.SetAttribute ("MaxBytes", UintegerValue (data_mbytes * 1000000));
-
-      ApplicationContainer sourceApp = ftp.Install (sources.Get (i));
-      sourceApp.Start (Seconds (start_time * i));
-      sourceApp.Stop (Seconds (stop_time - 3));
-
-      sinkHelper.SetAttribute ("Protocol", TypeIdValue (TcpSocketFactory::GetTypeId ()));
-      ApplicationContainer sinkApp = sinkHelper.Install (sinks.Get (i));
-      sinkApp.Start (Seconds (start_time * i));
-      sinkApp.Stop (Seconds (stop_time));
-      std::cout << "remote address: " << sink_interfaces.GetAddress (0) << std::endl;
-    }
+  {
+    AddressValue remoteAddress (InetSocketAddress (sink_interfaces.GetAddress (i, 0), port));
+    Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (tcp_adu_size));
+    BulkSendHelper ftp ("ns3::TcpSocketFactory", Address ());
+    ftp.SetAttribute ("Remote", remoteAddress);
+    ftp.SetAttribute ("SendSize", UintegerValue (tcp_adu_size));
+    ftp.SetAttribute ("MaxBytes", UintegerValue (data_mbytes * 1000000));
+    ApplicationContainer sourceApp = ftp.Install (sources.Get (i));
+    sourceApp.Start (Seconds (start_time * i));
+    sourceApp.Stop (Seconds (stop_time - 3));
+    sinkHelper.SetAttribute ("Protocol", TypeIdValue (TcpSocketFactory::GetTypeId ()));
+    ApplicationContainer sinkApp = sinkHelper.Install (sinks.Get (i));
+    sinkApp.Start (Seconds (start_time * i));
+    sinkApp.Stop (Seconds (stop_time));
+    std::cout << "remote address: " << sink_interfaces.GetAddress (0) << std::endl;
+  }
 
   // Set up tracing if enabled
   if (tracing)
-    {
-      std::ofstream ascii;
-      Ptr<OutputStreamWrapper> ascii_wrap;
-      ascii.open ((prefix_file_name + "-ascii").c_str ());
-      ascii_wrap = new OutputStreamWrapper ((prefix_file_name + "-ascii").c_str (),
-                                            std::ios::out);
-      stack.EnableAsciiIpv4All (ascii_wrap);
-
-      Simulator::Schedule (Seconds (0.00001), &TraceCwnd, "data/" + transport_prot + "-cwnd.data");
-      Simulator::Schedule (Seconds (0.00001), &TraceSsThresh, "data/" + transport_prot + "-ssth.data");
-      /*Simulator::Schedule (Seconds (0.00001), &TraceRtt, prefix_file_name + "-rtt.data");
-      Simulator::Schedule (Seconds (0.00001), &TraceRto, prefix_file_name + "-rto.data");
-      Simulator::Schedule (Seconds (0.00001), &TraceNextTx, prefix_file_name + "-next-tx.data");
-      Simulator::Schedule (Seconds (0.00001), &TraceInFlight, prefix_file_name + "-inflight.data");
-      Simulator::Schedule (Seconds (0.1), &TraceNextRx, prefix_file_name + "-next-rx.data");*/
-    }
+  {
+    std::ofstream ascii;
+    Ptr<OutputStreamWrapper> ascii_wrap;
+    ascii.open ((prefix_file_name + "-ascii").c_str ());
+    ascii_wrap = new OutputStreamWrapper ((prefix_file_name + "-ascii").c_str (),
+                                          std::ios::out);
+    stack.EnableAsciiIpv4All (ascii_wrap);
+    Simulator::Schedule (Seconds (0.00001), &TraceCwnd, "data/" + transport_prot + "-cwnd.data");
+    Simulator::Schedule (Seconds (0.00001), &TraceSsThresh, "data/" + transport_prot + "-ssth.data");
+    /*Simulator::Schedule (Seconds (0.00001), &TraceRtt, prefix_file_name + "-rtt.data");
+    Simulator::Schedule (Seconds (0.00001), &TraceRto, prefix_file_name + "-rto.data");
+    Simulator::Schedule (Seconds (0.00001), &TraceNextTx, prefix_file_name + "-next-tx.data");
+    Simulator::Schedule (Seconds (0.00001), &TraceInFlight, prefix_file_name + "-inflight.data");
+    Simulator::Schedule (Seconds (0.1), &TraceNextRx, prefix_file_name + "-next-rx.data");*/
+  }
 
   if (pcap)
-    {
-      UnReLink.EnablePcapAll (prefix_file_name, true);
-      LocalLink.EnablePcapAll (prefix_file_name, true);
-    }
+  {
+    UnReLink.EnablePcapAll (prefix_file_name, true);
+    LocalLink.EnablePcapAll (prefix_file_name, true);
+  }
 
   // Flow monitor
   FlowMonitorHelper flowHelper;
@@ -454,19 +451,19 @@ int main (int argc, char *argv[])
 
   if (flow_monitor)
   {
-      //flowHelper.SerializeToXmlFile (prefix_file_name + ".flowmonitor", true, true);
-      monitor->CheckForLostPackets ();
-      Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowHelper.GetClassifier());
-      std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
-      for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin(); i != stats.end(); ++i)
-      {
-        Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-        std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ") - "<<"\n";
-        std::cout << " Tx Bytes: " << i->second.txBytes << "\n";
-        std::cout << " Rx Bytes: " << i->second.rxBytes << "\n";
-        std::cout << " PacketLoss: " <<i->second.lostPackets<<"\n";
-        std::cout << " Throughput: " << i->second.rxBytes * 8.0 / (i->second.timeLastRxPacket.GetSeconds() - i->second.timeFirstTxPacket.GetSeconds())/1024/1024 << " Mbps\n";
-      }
+    //flowHelper.SerializeToXmlFile (prefix_file_name + ".flowmonitor", true, true);
+    monitor->CheckForLostPackets ();
+    Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowHelper.GetClassifier());
+    std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
+    for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin(); i != stats.end(); ++i)
+    {
+      Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+      std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ") - "<<"\n";
+      std::cout << " Tx Bytes: " << i->second.txBytes << "\n";
+      std::cout << " Rx Bytes: " << i->second.rxBytes << "\n";
+      std::cout << " PacketLoss: " <<i->second.lostPackets<<"\n";
+      std::cout << " Throughput: " << i->second.rxBytes * 8.0 / (i->second.timeLastRxPacket.GetSeconds() - i->second.timeFirstTxPacket.GetSeconds())/1024/1024 << " Mbps\n";
+    }
   }
 
   Simulator::Destroy ();
