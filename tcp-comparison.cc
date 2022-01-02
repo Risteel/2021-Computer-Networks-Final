@@ -64,7 +64,7 @@ NS_LOG_COMPONENT_DEFINE ("TcpVariantsComparison");
 
 static bool firstCwnd = true;
 static bool firstSshThr = true;
-//static bool firstRtt = true;
+static bool firstRtt = true;
 //static bool firstRto = true;
 static Ptr<OutputStreamWrapper> cWndStream;
 static Ptr<OutputStreamWrapper> ssThreshStream;
@@ -111,7 +111,7 @@ SsThreshTracer (uint32_t oldval, uint32_t newval)
   }
 }
 
-/*static void
+static void
 RttTracer (Time oldval, Time newval)
 {
   if (firstRtt)
@@ -122,7 +122,7 @@ RttTracer (Time oldval, Time newval)
   *rttStream->GetStream () << Simulator::Now ().GetSeconds () << " " << newval.GetSeconds () << std::endl;
 }
 
-static void
+/*static void
 RtoTracer (Time oldval, Time newval)
 {
   if (firstRto)
@@ -171,7 +171,7 @@ TraceSsThresh (std::string ssthresh_tr_file_name)
   Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/SlowStartThreshold", MakeCallback (&SsThreshTracer));
 }
 
-/*static void
+static void
 TraceRtt (std::string rtt_tr_file_name)
 {
   AsciiTraceHelper ascii;
@@ -179,7 +179,7 @@ TraceRtt (std::string rtt_tr_file_name)
   Config::ConnectWithoutContext ("/NodeList/1/$ns3::TcpL4Protocol/SocketList/0/RTT", MakeCallback (&RttTracer));
 }
 
-static void
+/*static void
 TraceRto (std::string rto_tr_file_name)
 {
   AsciiTraceHelper ascii;
@@ -214,7 +214,6 @@ TraceNextRx (std::string &next_rx_seq_file_name)
 
 int main (int argc, char *argv[])
 {
-  std::cout << "start" << std::endl;
   std::string transport_prot = "TcpVegas";
   double error_p = 0.0;
   std::string bandwidth = "10Mbps";
@@ -226,7 +225,7 @@ int main (int argc, char *argv[])
   uint64_t data_mbytes = 0;
   uint32_t mtu_bytes = 400;
   uint16_t num_flows = 1;
-  double duration = 10.0;
+  double duration = 100.0;
   uint32_t run = 0;
   bool flow_monitor = true;
   bool sack = true;
@@ -427,8 +426,8 @@ int main (int argc, char *argv[])
     stack.EnableAsciiIpv4All (ascii_wrap);
     Simulator::Schedule (Seconds (0.00001), &TraceCwnd, "data/" + transport_prot + "-cwnd.data");
     Simulator::Schedule (Seconds (0.00001), &TraceSsThresh, "data/" + transport_prot + "-ssth.data");
-    /*Simulator::Schedule (Seconds (0.00001), &TraceRtt, prefix_file_name + "-rtt.data");
-    Simulator::Schedule (Seconds (0.00001), &TraceRto, prefix_file_name + "-rto.data");
+    Simulator::Schedule (Seconds (0.00001), &TraceRtt, "data/" + transport_prot + "-rtt.data");
+    /*Simulator::Schedule (Seconds (0.00001), &TraceRto, prefix_file_name + "-rto.data");
     Simulator::Schedule (Seconds (0.00001), &TraceNextTx, prefix_file_name + "-next-tx.data");
     Simulator::Schedule (Seconds (0.00001), &TraceInFlight, prefix_file_name + "-inflight.data");
     Simulator::Schedule (Seconds (0.1), &TraceNextRx, prefix_file_name + "-next-rx.data");*/
@@ -439,8 +438,9 @@ int main (int argc, char *argv[])
   Ptr<FlowMonitor> monitor = flowHelper.InstallAll();
 
   Simulator::Stop (Seconds (stop_time));
+  std::cout << "Start simulator" << std::endl;
   Simulator::Run ();
-
+  std::cout << "--------------------------------------" << std::endl;
   if (flow_monitor)
   {
     //flowHelper.SerializeToXmlFile (prefix_file_name + ".flowmonitor", true, true);
@@ -457,7 +457,8 @@ int main (int argc, char *argv[])
       std::cout << " Throughput: " << i->second.rxBytes * 8.0 / (i->second.timeLastRxPacket.GetSeconds() - i->second.timeFirstTxPacket.GetSeconds())/1024/1024 << " Mbps\n";
     }
   }
-
+  std::cout << "--------------------------------------" << std::endl;
+  std::cout << "Duration of simulation: " << duration << " seconds" << std::endl;
   Simulator::Destroy ();
   return 0;
 }
