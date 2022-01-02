@@ -81,34 +81,34 @@ static void
 CwndTracer (uint32_t oldval, uint32_t newval)
 {
   if (firstCwnd)
-    {
-      *cWndStream->GetStream () << "0.0 " << oldval << std::endl;
-      firstCwnd = false;
-    }
+  {
+    *cWndStream->GetStream () << "0.0 " << oldval << std::endl;
+    firstCwnd = false;
+  }
   *cWndStream->GetStream () << "cwnd " << Simulator::Now ().GetSeconds () << ": " << newval << std::endl;
   cWndValue = newval;
 
   if (!firstSshThr)
-    {
-      *ssThreshStream->GetStream () << "ssthresh " << Simulator::Now ().GetSeconds () << ": " << ssThreshValue << std::endl;
-    }
+  {
+    *ssThreshStream->GetStream () << "ssthresh " << Simulator::Now ().GetSeconds () << ": " << ssThreshValue << std::endl;
+  }
 }
 
 static void
 SsThreshTracer (uint32_t oldval, uint32_t newval)
 {
   if (firstSshThr)
-    {
-      *ssThreshStream->GetStream () << "0.0 " << oldval << std::endl;
+  {
+    *ssThreshStream->GetStream () << "0.0 " << oldval << std::endl;
       firstSshThr = false;
-    }
-  *ssThreshStream->GetStream () << Simulator::Now ().GetSeconds () << " " << newval << std::endl;
+  }
+  *ssThreshStream->GetStream () << "ssthresh" << (oldval == 0 ? " " : " packet loss occurs ") << Simulator::Now ().GetSeconds () << " " << newval << std::endl;
   ssThreshValue = newval;
 
-  if (!firstCwnd)
-    {
-      *cWndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cWndValue << std::endl;
-    }
+  if (!firstCwnd && oldval != 0)
+  {
+    *cWndStream->GetStream () << "cwnd packet loss occurs " << Simulator::Now ().GetSeconds () << " " << cWndValue << std::endl;
+  }
 }
 
 /*static void
@@ -229,7 +229,6 @@ int main (int argc, char *argv[])
   double duration = 10.0;
   uint32_t run = 0;
   bool flow_monitor = true;
-  bool pcap = false;
   bool sack = true;
   std::string queue_disc_type = "ns3::PfifoFastQueueDisc";
   std::string recovery = "ns3::TcpClassicRecovery";
@@ -252,7 +251,6 @@ int main (int argc, char *argv[])
   cmd.AddValue ("duration", "Time to allow flows to run in seconds", duration);
   cmd.AddValue ("run", "Run index (for setting repeatable seeds)", run);
   cmd.AddValue ("flow_monitor", "Enable flow monitor", flow_monitor);
-  cmd.AddValue ("pcap_tracing", "Enable or disable PCAP tracing", pcap);
   cmd.AddValue ("queue_disc_type", "Queue disc type for gateway (e.g. ns3::CoDelQueueDisc)", queue_disc_type);
   cmd.AddValue ("sack", "Enable or disable SACK option", sack);
   cmd.AddValue ("recovery", "Recovery algorithm type to use (e.g., ns3::TcpPrrRecovery", recovery);
@@ -434,12 +432,6 @@ int main (int argc, char *argv[])
     Simulator::Schedule (Seconds (0.00001), &TraceNextTx, prefix_file_name + "-next-tx.data");
     Simulator::Schedule (Seconds (0.00001), &TraceInFlight, prefix_file_name + "-inflight.data");
     Simulator::Schedule (Seconds (0.1), &TraceNextRx, prefix_file_name + "-next-rx.data");*/
-  }
-
-  if (pcap)
-  {
-    UnReLink.EnablePcapAll (prefix_file_name, true);
-    LocalLink.EnablePcapAll (prefix_file_name, true);
   }
 
   // Flow monitor
